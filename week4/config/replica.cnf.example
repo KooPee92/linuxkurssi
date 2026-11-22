@@ -1,0 +1,8 @@
+[mariadb]
+
+# Server B - Read-only replica
+server_id = 2
+read_only = ON
+
+# Replicate only the Week 2 database
+replicate_do_db = viikko2

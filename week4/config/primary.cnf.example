@@ -1,0 +1,11 @@
+[mariadb]
+
+# Server A - Primary database
+server_id = 1
+
+# Enable binary logging for replication
+log_bin = mariadb-bin
+binlog_format = ROW
+
+# Local connections and Server B replication
+bind-address = 127.0.0.1,192.168.1.235
