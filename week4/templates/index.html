@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Linux Server - Week 4</title>
+
+    <style>
+        body {
+            background-color: #111827;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 30px 20px;
+            line-height: 1.6;
+        }
+  .container {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #38bdf8;
+            text-align: center;
+        }
+
+        h2 {
+            color: #38bdf8;
+            margin-top: 0;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .links {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #0284c7;
+            color: white;
+            padding: 12px 20px;
+            margin: 5px;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+
+        .button:hover {
+            background-color: #0369a1;
+        }
+
+        .card {
+            background-color: #1e293b;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+        }
+
+        .counter {
+            font-size: 48px;
+            font-weight: bold;
+            color: #4ade80;
+            text-align: center;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .note {
+            color: #cbd5e1;
+            text-align: center;
+        }
+
+        code {
+            color: #7dd3fc;
+            overflow-wrap: anywhere;
+        }
+
+        pre {
+            background-color: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            color: #e2e8f0;
+        }
+
+        a {
+            color: #7dd3fc;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>My Linux Server - Week 4</h1>
+
+    <p class="subtitle">
+        Server Cloning, Backups and MariaDB Replication
+    </p>
+
+    <div class="links">
+        <a class="button" href="/">Back to Week 1</a>
+
+        <a class="button"
+           href="http://195.148.23.48/viikko2/">
+            Back to Week 2
+        </a>
+
+        <a class="button" href="/viikko3/">
+            Back to Week 3
+        </a>
+
+        <a class="button"
+           href="https://github.com/KooPee92/linuxkurssi"
+           target="_blank" rel="noopener noreferrer">
+            View on GitHub
+        </a>
+    </div>
+
+    <div class="card">
+        <h2 class="center">Server B - Read-Only Replica</h2>
+
+        <p class="note">Replicated visitor count</p>
+
+        <div class="counter">{{ visits }}</div>
+
+        <p class="note">
+            This counter is replicated from Server A.
+            Refreshing this page does not increase the counter.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>1. Server Cloning</h2>
+
+        <p>
+            I created Server B in CSC cPouta using a snapshot
+            of my existing Linux server.
+        </p>
+
+        <p>
+            Both servers have their own IP addresses.
+            Server A continues running the original website,
+            while Server B hosts this read-only replica.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>2. Automatic Backups</h2>
+
+        <p>
+            I created a Bash script that copies website files
+            from Server A to Server B using rsync over SSH.
+        </p>
+
+        <p>
+            Cron is configured to run the backup every hour.
+            Each backup is saved in a separate timestamped folder.
+        </p>
+
+        <p>
+            Backup location on Server B:
+            <code>/srv/backups/week4/</code>
+        </p>
+
+        <p>
+            A dedicated Linux user, <code>backuprecv</code>,
+            owns the backup directory. Access is restricted
+            using SSH keys and file permissions.
+        </p>
+
+        <pre><code>0 * * * * /home/ubuntu/viikko4/backup.sh</code></pre>
+
+        <p>
+            Backup results are recorded in a log file
+            on Server A.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>3. MariaDB Replication</h2>
+
+        <p>
+            Server A is the primary MariaDB server.
+            Server B receives database changes automatically
+            through MariaDB replication.
+        </p>
+
+        <p>
+            Binary logging is enabled on Server A.
+            Server B uses a different server ID and
+            has read-only mode enabled.
+        </p>
+
+        <p>
+            The Flask application on Server B uses a separate
+            database user with SELECT permission only.
+            It reads the replicated visitor count without
+            modifying the database.
+        </p>
+
+        <pre><code>SHOW REPLICA STATUS\G</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>4. Users and Permissions</h2>
+
+        <p>
+            I used separate users for different tasks.
+            The backup user handles SSH file transfers,
+            the replication user copies database changes,
+            and the Flask reader can only read the counter.
+        </p>
+
+        <p>
+            Passwords, private SSH keys and database backups
+            are kept outside the public website and GitHub.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>5. Testing</h2>
+
+        <p>
+            I tested the MariaDB replication by increasing
+            the visitor counter on Server A.
+            The same value appeared on Server B.
+        </p>
+
+        <p>
+            I also refreshed the Week 4 page several times.
+            The visitor count did not increase.
+        </p>
+
+        <p>
+            I verified two successful automatic hourly backups
+            and restored an HTML file from a backup.
+            The restored file matched the original.
+        </p>
+
+        <p>
+            I also rebooted Server B and confirmed that
+            Nginx, MariaDB, Flask and Cron started correctly.
+            Database replication continued working after the reboot.
+        </p>
+    </div>
+
+</div>
+</body>
+</html>
