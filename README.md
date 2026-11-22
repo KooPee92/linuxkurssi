@@ -43,6 +43,25 @@ that automatic updates continue after a server reboot.
 
 **Files:** [Week 3](week3/)
 
+## Week 4 – Server Cloning, Backups and Database Replication
+
+Created a second Ubuntu server using a snapshot in CSC cPouta.
+
+Configured automatic hourly backups using Bash, rsync, SSH and Cron.
+
+Set up continuous MariaDB replication between two servers.
+Server B displays the replicated visitor counter without increasing it.
+
+Tested automatic backups, file restoration and server reboot.
+
+**Status:** Completed.
+
+**Server A:** http://195.148.23.48/viikko2/
+
+**Server B:** http://195.148.20.234/viikko4/
+
+**Files:** [Week 4](week4/)
+
 ## Version Control
 
 I use Git and GitHub to track the development of my assignments.
