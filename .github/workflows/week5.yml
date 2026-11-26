@@ -1,0 +1,39 @@
+name: Week 5 CI/CD
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test Week 5 Application
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: week5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+          cache: pip
+          cache-dependency-path: week5/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install ruff
+
+      - name: Check Python code
+        run: python -m ruff check app.py db.py tests/
+
+      - name: Run automated tests
+        run: python -m pytest tests/ -v
