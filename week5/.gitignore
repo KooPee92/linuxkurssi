@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+
+# Logs and database backups
+*.log
+*.sql
+*.sql.gz

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Linux Server - Week 5</title>
+
+    <link rel="stylesheet" href="static/style.css">
+    <script src="static/chat.js" defer></script>
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>My Linux Server - Week 5</h1>
+
+        <p class="subtitle">
+            Self-Hosted AI Chat with Ollama and MariaDB
+        </p>
+
+        <nav class="links">
+            <a class="button" href="/">Back to Week 1</a>
+            <a class="button" href="/viikko2/">Back to Week 2</a>
+            <a class="button" href="/viikko3/">Back to Week 3</a>
+
+            <a class="button"
+               href="http://195.148.20.234/viikko4/">
+                Back to Week 4
+            </a>
+
+            <a class="button"
+               href="https://github.com/KooPee92/linuxkurssi"
+               target="_blank" rel="noopener noreferrer">
+                View on GitHub
+            </a>
+        </nav>
+
+        <section class="card">
+            <h2>Local AI Assistant</h2>
+
+            <p>
+                This chatbot runs on my own Linux server
+                using Ollama and the Qwen2.5 3B language model.
+            </p>
+
+            <div id="chat-messages" class="chat-messages"
+                 role="log" aria-live="polite">
+            </div>
+
+            <p id="status" class="status"></p>
+
+            <form id="chat-form">
+                <textarea
+                    id="message"
+                    maxlength="1000"
+                    placeholder="Write your message here..."
+                    aria-label="Your message"
+                    required
+                ></textarea>
+
+                <button class="button" id="send-button"
+                        type="submit">
+                    Send Message
+                </button>
+            </form>
+
+            <p class="note">
+                Conversations are stored in MariaDB.
+                Please do not enter sensitive information.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Project Information</h2>
+
+            <p>
+                The application uses Flask, Gunicorn,
+                Ollama and MariaDB.
+            </p>
+
+            <p>
+                The language model runs locally on this server.
+                Conversation history is loaded from MariaDB
+                when the page is refreshed.
+            </p>
+        </section>
+
+    </div>
+</body>
+</html>
