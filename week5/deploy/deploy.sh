@@ -152,10 +152,16 @@ if find "$BUILD/vendor" ! -type f ! -type d | grep -q .; then
 fi
 
 # Install prepared dependencies
-cp -a "$BUILD/vendor/." "$RELEASE/vendor/"
+cp -R --no-preserve=ownership,mode     "$BUILD/vendor/." "$RELEASE/vendor/"
 
 chown -R root:week5app "$RELEASE"
-chmod -R o-rwx "$RELEASE"
+
+# Allow week5app to read installed dependencies
+find "$RELEASE" -type d -exec chmod 750 {} +
+find "$RELEASE" -type f -exec chmod 640 {} +
+
+# Preserve executable permissions for native binaries
+find "$RELEASE/vendor" -type f -name "*.so" -exec chmod 750 {} +
 
 # Verify required Python packages
 echo "Checking Python packages..."
@@ -216,10 +222,17 @@ rollback() {
         fi
 
         systemctl daemon-reload
-        systemctl restart viikko5
 
-        if nginx -t; then
-            systemctl reload nginx
+        if systemctl restart viikko5; then
+            echo "Previous application service restarted"
+        else
+            echo "CRITICAL: Application service rollback failed"
+        fi
+
+        if nginx -t && systemctl reload nginx; then
+            echo "Previous Nginx configuration restored"
+        else
+            echo "CRITICAL: Nginx rollback failed"
         fi
     fi
 
