@@ -75,6 +75,17 @@ fi
 # Use a directory accessible to service accounts
 cd /
 
+# Report failures during preparation
+preparation_failed() {
+    trap - ERR INT TERM
+    echo "ERROR: Deployment preparation failed"
+    echo "Check build directory: $BUILD"
+    echo "Check release directory: $RELEASE"
+    exit 1
+}
+
+trap preparation_failed ERR INT TERM
+
 # Prepare Python dependencies
 echo "Preparing Python dependencies..."
 
