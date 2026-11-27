@@ -91,3 +91,17 @@ def test_chat_with_mocked_services(client, monkeypatch):
     assert len(saved_messages) == 1
     assert saved_messages[0][1] == "What is Linux?"
     assert saved_messages[0][2] == "Linux is an operating system."
+
+
+def test_health_endpoint(client, monkeypatch):
+    # Simulate a commit SHA provided by deployment
+    test_sha = "a" * 40
+    monkeypatch.setenv("DEPLOY_SHA", test_sha)
+
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "status": "ok",
+        "commit": test_sha
+    }

@@ -122,3 +122,14 @@ def chat():
     session["chat_id"] = session_id
 
     return jsonify({"reply": answer})
+
+
+@app.get("/health")
+def health():
+    # Commit SHA is provided by the deployment pipeline
+    commit_sha = os.getenv("DEPLOY_SHA", "not-deployed")
+
+    return jsonify({
+        "status": "ok",
+        "commit": commit_sha
+    })
