@@ -1,0 +1,24 @@
+[Unit]
+Description=Week 5 Flask AI Chat Application
+After=network.target mariadb.service ollama.service
+Wants=mariadb.service ollama.service
+
+[Service]
+User=week5app
+Group=week5app
+
+WorkingDirectory=/opt/viikko5
+EnvironmentFile=/etc/viikko5/viikko5.env
+EnvironmentFile=-/etc/viikko5/version.env
+
+ExecStart=/opt/viikko5/.venv/bin/gunicorn --workers 1 --threads 1 --timeout 240 --bind 127.0.0.1:8002 app:app
+
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

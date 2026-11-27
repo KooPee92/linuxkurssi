@@ -17,3 +17,4 @@ __pycache__/
 
 # Allow public database schema
 !deploy/schema.sql
+*.bak
