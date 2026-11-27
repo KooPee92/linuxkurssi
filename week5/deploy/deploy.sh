@@ -21,9 +21,9 @@ if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
 fi
 
 # Directories
-BASE="/var/lib/viikko5-deploy"
-SOURCE="$BASE/staging/$SHA/week5"
-BUILD="$BASE/builds/$SHA"
+BASE="/var/lib/viikko5-verified"
+SOURCE="$BASE/$SHA/week5"
+BUILD="/var/lib/viikko5-build/$SHA"
 
 APP="/opt/viikko5"
 RELEASES="$APP/releases"
@@ -72,23 +72,31 @@ if [ -e "$RELEASE" ]; then
     exit 1
 fi
 
+# Use a directory accessible to service accounts
+cd /
+
 # Prepare Python dependencies
 echo "Preparing Python dependencies..."
 
+if [ -e "$BUILD" ]; then
+    echo "ERROR: Build directory already exists: $BUILD"
+    exit 1
+fi
+
 install -d -m 700 \
-    -o week5deploy -g week5deploy "$BUILD"
+    -o week5build -g week5build "$BUILD"
 
 install -m 600 \
-    -o week5deploy -g week5deploy \
+    -o week5build -g week5build \
     "$SOURCE/requirements.txt" \
     "$BUILD/requirements.txt"
 
 # Create isolated virtual environment
-runuser -u week5deploy -- \
+runuser -u week5build -- \
     python3 -m venv "$BUILD/.venv"
 
 # Install packages without root privileges
-runuser -u week5deploy -- \
+runuser -u week5build -- \
     "$BUILD/.venv/bin/python" -m pip install \
     --no-input \
     --disable-pip-version-check \
@@ -96,6 +104,10 @@ runuser -u week5deploy -- \
     -r "$BUILD/requirements.txt"
 
 echo "Dependencies installed"
+
+# Protect completed build from further modifications
+chown -R root:root "$BUILD"
+chmod -R go-w "$BUILD"
 
 # Create application release
 echo "Preparing application release..."
@@ -125,6 +137,19 @@ install -m 640 -o root -g week5app \
     "$SOURCE/static/style.css" \
     "$SOURCE/static/chat.js" \
     "$RELEASE/static/"
+
+# Verify dependency files before installation
+echo "Checking dependency files..."
+
+if find "$BUILD/vendor" -type l | grep -q .; then
+    echo "ERROR: Symbolic links found in dependencies"
+    exit 1
+fi
+
+if find "$BUILD/vendor" ! -type f ! -type d | grep -q .; then
+    echo "ERROR: Unsupported dependency file type"
+    exit 1
+fi
 
 # Install prepared dependencies
 cp -a "$BUILD/vendor/." "$RELEASE/vendor/"
