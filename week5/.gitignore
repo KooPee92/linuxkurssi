@@ -14,3 +14,6 @@ __pycache__/
 *.log
 *.sql
 *.sql.gz
+
+# Allow public database schema
+!deploy/schema.sql
