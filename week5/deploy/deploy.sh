@@ -196,7 +196,7 @@ ACTIVATED=0
 
 # Restore previous deployment on failure
 rollback() {
-    trap - ERR
+    trap - ERR INT TERM
     set +e
 
     echo "ERROR: Deployment failed"
@@ -240,7 +240,7 @@ rollback() {
     exit 1
 }
 
-trap rollback ERR
+trap rollback ERR INT TERM
 
 # Update Nginx configuration
 echo "Updating Nginx..."
@@ -340,7 +340,7 @@ print("Deployed commit:", data["commit"])
 PY
 
 # Deployment completed
-trap - ERR
+trap - ERR INT TERM
 rm -rf "$BACKUP"
 
 echo "----------------------------------------"
