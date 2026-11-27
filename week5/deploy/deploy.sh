@@ -273,6 +273,9 @@ WorkingDirectory=/opt/viikko5/current
 EnvironmentFile=/etc/viikko5/viikko5.env
 EnvironmentFile=-/etc/viikko5/version.env
 Environment=PYTHONPATH=/opt/viikko5/current/vendor
+RuntimeDirectory=viikko5
+RuntimeDirectoryMode=0700
+Environment=HOME=/run/viikko5
 
 ExecStart=/usr/bin/python3 -m gunicorn --workers 1 --threads 1 --timeout 240 --bind 127.0.0.1:8002 app:app
 

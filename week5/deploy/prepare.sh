@@ -30,9 +30,9 @@ echo "Preparing Week 5 commit: $SHA"
 # Create protected directory
 install -d -m 700 -o root -g root "$BASE"
 
-# Prevent preparing an existing release
-if [ -e "$TARGET" ]; then
-    echo "ERROR: Commit already prepared"
+# Existing prepared releases are checked against GitHub below
+if [ -e "$TARGET" ] && [ ! -d "$TARGET/week5" ]; then
+    echo "ERROR: Invalid existing preparation"
     exit 1
 fi
 
@@ -103,8 +103,16 @@ fi
 chown -R root:root "$WORK/export"
 chmod -R go-w "$WORK/export"
 
-# Activate prepared directory
-mv "$WORK/export" "$TARGET"
+# Activate prepared directory or verify an existing one
+if [ -d "$TARGET/week5" ]; then
+    if ! diff -qr "$WORK/export/week5" "$TARGET/week5"; then
+        echo "ERROR: Prepared files do not match GitHub"
+        exit 1
+    fi
+    echo "Existing preparation verified"
+else
+    mv "$WORK/export" "$TARGET"
+fi
 
 echo "----------------------------------------"
 echo "Week 5 preparation successful!"
