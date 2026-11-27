@@ -28,6 +28,7 @@ BUILD="/var/lib/viikko5-build/$SHA"
 APP="/opt/viikko5"
 RELEASES="$APP/releases"
 RELEASE="$RELEASES/$SHA"
+PENDING="$RELEASES/.pending-$SHA-$$"
 CURRENT="$APP/current"
 
 VERSION="/etc/viikko5/version.env"
@@ -66,9 +67,11 @@ do
     fi
 done
 
-# Do not overwrite an existing release
-if [ -e "$RELEASE" ]; then
-    echo "ERROR: Release already exists"
+# Never overwrite an existing release automatically
+if [ -e "$RELEASE" ] || [ -L "$RELEASE" ]; then
+    echo "ERROR: Release directory already exists: $RELEASE"
+    echo "Check whether this commit is already deployed."
+    echo "Do not remove an active release."
     exit 1
 fi
 
@@ -78,7 +81,16 @@ cd /
 # Report failures during preparation
 preparation_failed() {
     trap - ERR INT TERM
+    set +e
+
     echo "ERROR: Deployment preparation failed"
+
+    # Remove only this execution's incomplete pending directory
+    if [ -n "${PENDING:-}" ] && [ -d "$PENDING" ] && [ ! -L "$PENDING" ]; then
+        rm -rf -- "$PENDING"
+        echo "Incomplete pending release removed"
+    fi
+
     echo "Check build directory: $BUILD"
     echo "Check release directory: $RELEASE"
     exit 1
@@ -128,26 +140,26 @@ install -d -m 750 \
 
 install -d -m 750 \
     -o root -g week5app \
-    "$RELEASE" \
-    "$RELEASE/templates" \
-    "$RELEASE/static" \
-    "$RELEASE/vendor"
+    "$PENDING" \
+    "$PENDING/templates" \
+    "$PENDING/static" \
+    "$PENDING/vendor"
 
 # Install application files
 install -m 640 -o root -g week5app \
     "$SOURCE/app.py" \
     "$SOURCE/db.py" \
     "$SOURCE/requirements.txt" \
-    "$RELEASE/"
+    "$PENDING/"
 
 install -m 640 -o root -g week5app \
     "$SOURCE/templates/index.html" \
-    "$RELEASE/templates/"
+    "$PENDING/templates/"
 
 install -m 640 -o root -g week5app \
     "$SOURCE/static/style.css" \
     "$SOURCE/static/chat.js" \
-    "$RELEASE/static/"
+    "$PENDING/static/"
 
 # Verify dependency files before installation
 echo "Checking dependency files..."
@@ -163,26 +175,41 @@ if find "$BUILD/vendor" ! -type f ! -type d | grep -q .; then
 fi
 
 # Install prepared dependencies
-cp -R --no-preserve=ownership,mode     "$BUILD/vendor/." "$RELEASE/vendor/"
+cp -R --no-preserve=ownership,mode     "$BUILD/vendor/." "$PENDING/vendor/"
 
-chown -R root:week5app "$RELEASE"
+chown -R root:week5app "$PENDING"
 
 # Allow week5app to read installed dependencies
-find "$RELEASE" -type d -exec chmod 750 {} +
-find "$RELEASE" -type f -exec chmod 640 {} +
+find "$PENDING" -type d -exec chmod 750 {} +
+find "$PENDING" -type f -exec chmod 640 {} +
 
 # Preserve executable permissions for native binaries
-find "$RELEASE/vendor" -type f -name "*.so" -exec chmod 750 {} +
+find "$PENDING/vendor" -type f -name "*.so" -exec chmod 750 {} +
 
 # Verify required Python packages
 echo "Checking Python packages..."
 
 runuser -u week5app -- \
-    env PYTHONPATH="$RELEASE/vendor" \
+    env PYTHONPATH="$PENDING/vendor" \
     /usr/bin/python3 -c \
     'import flask, gunicorn, pymysql, requests'
 
 echo "Application release ready"
+
+# Test build without activating production
+if [ "${2:-}" = "--test-build" ]; then
+    echo "Build test successful"
+    echo "Prepared application: $PENDING"
+    echo "Production services were not changed"
+    trap - ERR INT TERM
+    exit 0
+fi
+
+# Publish prepared release atomically
+mv -T "$PENDING" "$RELEASE"
+
+# Prepared release is now complete
+PENDING=""
 
 # Back up current configuration
 echo "Backing up configuration..."
@@ -269,40 +296,10 @@ nginx -t
 # Install systemd service
 echo "Updating systemd service..."
 
-cat > "$SERVICE" <<'EOF'
-[Unit]
-Description=Week 5 Flask AI Chat Application
-After=network.target mariadb.service ollama.service
-Wants=mariadb.service ollama.service
+install -m 644 -o root -g root \
+    "$SOURCE/deploy/viikko5.service" "$SERVICE.new.$$"
 
-[Service]
-User=week5app
-Group=week5app
-
-WorkingDirectory=/opt/viikko5/current
-
-EnvironmentFile=/etc/viikko5/viikko5.env
-EnvironmentFile=-/etc/viikko5/version.env
-Environment=PYTHONPATH=/opt/viikko5/current/vendor
-RuntimeDirectory=viikko5
-RuntimeDirectoryMode=0700
-Environment=HOME=/run/viikko5
-
-ExecStart=/usr/bin/python3 -m gunicorn --workers 1 --threads 1 --timeout 240 --bind 127.0.0.1:8002 app:app
-
-Restart=on-failure
-RestartSec=5
-
-NoNewPrivileges=true
-PrivateTmp=true
-UMask=0027
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-chown root:root "$SERVICE"
-chmod 644 "$SERVICE"
+mv -f "$SERVICE.new.$$" "$SERVICE"
 
 # Activate release
 echo "Activating release..."
